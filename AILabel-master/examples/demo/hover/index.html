@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+
+	<!--<script src='../../../jslib/gClass.js'></script>
+	<script src='../../../jslib/gConfig.js'></script>
+	<script src='../../../jslib/gUtil.js'></script>
+	<script src='../../../jslib/gGraph.js'></script>
+	<script src='../../../jslib/gGeometry.js'></script>
+	<script src='../../../jslib/gFeature.js'></script>
+    <script src='../../../jslib/gStyle.js'></script>
+    <script src="../../../jslib/gEdit.js"></script>
+	<script src='../../../jslib/gMap.js'></script>
+	<script src='../../../jslib/gLayer.js'></script>-->
+
+	<script src='../../AILabel.pkg.min.js'></script>
+	<style>
+        #map {
+        	width: 500px;
+        	height: 400px;
+        	border: 1px solid red;
+        	position: relative;
+        	cursor: pointer;
+        }
+	</style>
+</head>
+<body>
+	<div id="map"></div>
+	<button onmouseover="mouseOver();" onmouseout="mouseOut();">hover我:id='110'</button>
+	<div>鼠标滑入矢量要素‘高亮突出’，滑出取消高亮</div>
+	<script>
+        // 常用样式声明
+        const gFetureStyle = new AILabel.Style({strokeColor: '#0000FF', lineDash: true, lineWeight: 2});
+        const gFetureHoverStyle = new AILabel.Style({strokeColor: '#FF0000', lineDash: false, lineWeight: 2});
+
+        // 容器对象声明
+        let gMap = new AILabel.Map('map', {zoom: 1080, cx: 0, cy: 0, zoomMax: 650 * 10, zoomMin: 650 / 10});
+
+        // 图片层实例\添加
+        let gImageLayer = new AILabel.Layer.Image('img', '../../imgs/demo.jpeg', {w: 1080, h: 720}, {zIndex: 1});
+        gMap.addLayer(gImageLayer);
+
+        // 矢量层实例\添加
+        let gFeatureLayer = new AILabel.Layer.Feature('featureLayer', {zIndex: 2, transparent: true});
+        gMap.addLayer(gFeatureLayer);
+
+        // 矢量要素实例\添加
+        const fea = new AILabel.Feature.Polygon('110', [
+            {x: 10, y: 10},
+            {x: 50, y: 10},
+            {x: 40, y: 50},
+            {x: 20, y: 60},
+            {x: 10, y: 10}
+        ], {name: '中国'}, gFetureStyle);
+        gFeatureLayer.addFeature(fea);
+
+        // hover事件
+        function mouseOver() {
+            let cfeature = gFeatureLayer.getFeatureById('110');
+            if (!cfeature) {
+                return;
+            }
+            cfeature.hover();
+        }
+        function mouseOut() {
+            gFeatureLayer.resetFeatureStatus();
+        }
+    </script>
+</body>
+</html>

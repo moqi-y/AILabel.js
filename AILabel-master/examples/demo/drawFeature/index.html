@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+    <title>Document</title>
+
+    <script src='../../../jslib/gClass.js'></script>
+    <script src='../../../jslib/gConfig.js'></script>
+    <script src='../../../jslib/gWorker.js'></script>
+	<script src='../../../jslib/gUtil.js'></script>
+	<script src='../../../jslib/gGraph.js'></script>
+	<script src='../../../jslib/gGeometry.js'></script>
+	<script src='../../../jslib/gFeature.js'></script>
+    <script src='../../../jslib/gStyle.js'></script>
+    <script src="../../../jslib/gEdit.js"></script>
+	<script src='../../../jslib/gMap.js'></script>
+    <script src='../../../jslib/gLayer.js'></script>
+    <script src='../../../jslib/gControl.js'></script>
+
+	<!-- <script src='../../AILabel.pkg.min.js'></script> -->
+	<style>
+        #map {
+        	width: 100%;
+        	height: 500px;
+        	border: 1px solid red;
+        	position: relative;
+        	cursor: crosshair;
+            -moz-user-select:none;/*火狐*/
+            -webkit-user-select:none;/*webkit浏览器*/
+            -ms-user-select:none;/*IE10*/
+            -khtml-user-select:none;/*早期浏览器*/
+            user-select:none;
+        }
+        .command-btn {
+            display: inline-block;
+            margin: 0 20px;
+            margin-top: 10px;
+            font-size: 13px;
+            padding: 5px 10px;
+            border: 1px solid #aaa;
+        }
+	</style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="zoomIn" class="command-btn" onclick="zoomIn();">放大</div>
+    <div id="drawRect" class="command-btn" onclick="setMode('drawRect')">绘制矩形</div>
+    <div id="drawRoi" class="command-btn" onclick="setMode('drawRoi')">绘制ROI</div>
+    <div id="drawNotRoi" class="command-btn" onclick="setMode('drawNotRoi')">绘制非ROI</div>
+    <div id="drawPolygon" class="command-btn" onclick="setMode('drawPolygon')">绘制多边形</div>
+    <div id="drawMask" class="command-btn" style="background-color: #3377ff;" onclick="setMode('drawMask', '#FF0000', 10)">掩膜:红色:10</div>
+    <div id="drawMask2" class="command-btn" onclick="setMode('drawMask2', 'rgba(0,0,255,1)', 20)">掩膜:蓝色:20</div>
+    <div id="drawMask3" class="command-btn" onclick="setMode('drawMask3', '#9370DB', 30)">掩膜:紫色:30</div>
+    <div id="clearMask" class="command-btn" onclick="setMode('clearMask')">掩膜:擦除</div>
+    <div id="clearMask" class="command-btn" onclick="getMaskPixels()">获取涂抹像素数据</div>
+    <div id="clearMask" class="command-btn" onclick="getDefaultMaskPixels()">server涂抹数据回显</div>
+    <div id="drawPoint" class="command-btn" onclick="setMode('drawPoint')">绘制点</div>
+    <div id="drawPolyline" class="command-btn" onclick="setMode('drawPolyline', '#0000FF', 10)">绘制多段线:蓝色:10</div>
+    <div id="drawPolyline2" class="command-btn" onclick="setMode('drawPolyline2', '#9370DB', 20)">绘制多段线:紫色:20</div>
+    <div id="pan" class="command-btn" onclick="setMode('pan')">平移</div>
+    <div id="setcenter" class="command-btn" onclick="setCenter()">中心点设置(0,0)</div>
+    <div id="setZoom" class="command-btn" onclick="setZoom()">zoom设置(1000)</div>
+    <div id="setTipOff" class="command-btn" onclick="setTipOnOff(false)">关闭编辑tip提示</div>
+    <div id="setTipOn" class="command-btn" onclick="setTipOnOff(true)">打开编辑tip提示</div>
+    <script>
+        let globalRoiType = null;
+
+        function zoomIn() {
+            gMap && gMap.zoomIn();
+        }
+
+        function setCenter() {
+            gMap && gMap.setCenter(0, 0);
+        }
+
+        function setZoom() {
+            gMap && gMap.setZoom(1000);
+        }
+
+        function setTipOnOff(show) {
+            if (show) {
+                gMap && gMap.tipLayer.showTips();
+            }
+            else {
+                gMap && gMap.tipLayer.hideTips();
+            }
+        }
+
+        const mappingStyles = {
+            drawRect: {
+                drawStyle: {strokeColor: '#FF0000', opacity: 1, lineWeight: 1},
+                featureStyle: {strokeColor: '#00FF00', fillColor: '#0000FF', opacity: .3, lineWeight: 1}
+            },
+            drawRoi: {
+                drawStyle: {strokeColor: '#00FF00', opacity: 1, lineWeight: 1},
+                featureStyle: {strokeColor: '#0000FF', fillColor: '#00FF00', opacity: .3, lineWeight: 1}
+            },
+            drawNotRoi: {
+                drawStyle: {strokeColor: '#00FF00', opacity: 1, lineWeight: 1},
+                featureStyle: {strokeColor: '#0000FF', fillColor: '#00FF00', opacity: .3, lineWeight: 1}
+            },
+            drawPolygon: {
+                drawStyle: {strokeColor: '#00FF00', opacity: 1, lineWeight: 1},
+                featureStyle: {strokeColor: '#0000FF', fillColor: '#00FF00', opacity: .3, lineWeight: 1}
+            },
+            drawMask: {
+                drawStyle: {strokeColor: '#FF0000', fillColor: '#0000FF', opacity: 1, lineWeight: 1},
+                featureStyle: {}
+            },
+            clearMask: {
+                drawStyle: {lineWeight: 30},
+                featureStyle: {}
+            },
+            drawPoint: {
+                drawStyle: {pointRadius: 5},
+                featureStyle: {strokeColor: '#0000FF', fillColor: '#8B008B', opacity: 1, pointRadius: 5}
+            },
+            drawPolyline: {
+                drawStyle: {strokeColor: '#FF0000', fillColor: '#0000FF', opacity: 1, lineWeight: 10},
+                featureStyle: {strokeColor: '#0000FF', fillColor: '#FF0000', opacity: .5, lineWeight: 10}
+            },
+            pan: {
+                drawStyle: {},
+                featureStyle: {}
+            }
+        };
+        // 设置当前操作模式为‘drawRect’
+        function setMode(mode, color, size) {
+            globalRoiType = mode === 'drawRoi' ? 'roi' : (mode === 'drawNotRoi' ? 'notRoi' : '');
+            const preCurrentMode = mode.indexOf('drawMask') === 0 ? 'drawMask' : (mode.indexOf('Roi') !== -1 ? 'drawRoi' : mode);
+            const currentMode = preCurrentMode.indexOf('drawPolyline') === 0 ? 'drawPolyline' : preCurrentMode;
+            const drawStyle = mappingStyles[currentMode].drawStyle;
+            if (color) {
+                if (currentMode === 'drawPolyline') {
+                    drawStyle.strokeColor = color;
+                }
+                else {
+                    drawStyle.fillColor = color;
+                }
+            }
+            if (size) {
+                drawStyle.lineWeight = size;
+            }
+
+            gMap && gMap.setMode(currentMode, new AILabel.Style(drawStyle));
+            // gMap && gMap.setPanConfig({zoom: false});
+
+            document.getElementById('drawRect').style.backgroundColor = '#fff';
+            document.getElementById('drawRoi').style.backgroundColor = '#fff';
+            document.getElementById('drawNotRoi').style.backgroundColor = '#fff';
+            document.getElementById('drawPolygon').style.backgroundColor = '#fff';
+            document.getElementById('drawMask').style.backgroundColor = '#fff';
+            document.getElementById('drawMask2').style.backgroundColor = '#fff';
+            document.getElementById('drawMask3').style.backgroundColor = '#fff';
+            document.getElementById('drawMask3').style.backgroundColor = '#fff';
+            document.getElementById('clearMask').style.backgroundColor = '#fff';
+            document.getElementById('drawPoint').style.backgroundColor = '#fff';
+            document.getElementById('drawPolyline').style.backgroundColor = '#fff';
+            document.getElementById('drawPolyline2').style.backgroundColor = '#fff';
+            document.getElementById('pan').style.backgroundColor = '#fff';
+
+            document.getElementById(mode).style.backgroundColor = '#3377ff';
+        }
+        // 从底层往上按层级生成数组 广度优先遍历
+        function getLevelOrderBottom(roiLayerRoiAreas) {
+            let result = [];
+            let queue = roiLayerRoiAreas.concat([]);
+            while (queue.length > 0) {
+                [...queue].forEach(child => {
+                    queue.shift();
+                    result.unshift({roiType: child.roiType, points: child.points});
+                    child.children && (queue.push(...child.children));
+                });
+            }
+            return result;
+        }
+
+        const imgWidth = 4256;
+        const imgHeight = 2832;
+
+        // 容器对象声明
+        let gMap = new AILabel.Map('map', {zoom: imgWidth * 2, cx: 0, cy: 0, zoomMax: imgWidth * 10, zoomMin: imgWidth / 10, autoPan: true, drawZoom: true});
+
+        setMode('drawMask3', '#9370DB', 30);
+        gMap.setRectCross(true); // 绘制矩形时显示十字丝
+
+        const scaleControl = new AILabel.Control.Scale(
+			'scale-control-id',
+			{postion: {left: 10, top: 10}}
+		);
+		gMap.addControl(scaleControl);
+
+        // 图片层实例\添加
+        // 1000*800 ../../imgs/mask_img.jpg
+        // 1080*720 ../../imgs/demo.jpeg
+        // 4256*2832 ../../imgs/timg.jpeg
+        // 4024*2600 http://szth-bcc-online-com0-1322.szth:8931/data/iqi/datacenter/9h0wiafgrpo086ja0pubqfed6afzemsu/2c9p3mql59phj3gw6xdzhx28tmc5ceat/dataset/Single/60c872df-15.jpg
+        // 6048*4032 http://szth-bcc-online-com0-1322.szth:8931/data/iqi/datacenter/9h0wiafgrpo086ja0pubqfed6afzemsu/2c9p3mql59phj3gw6xdzhx28tmc5ceat/dataset/Single/e169bb58-51-1.jpg
+        // 2080*1560 https://bce.bdstatic.com/ai2b/resouce/img/labelSample.jpg
+        let gImageLayer = new AILabel.Layer.Image('img', '../../imgs/timg.jpeg', {w: imgWidth, h: imgHeight}, {zIndex: 1, grid: {rowCount: 3, columnCount: 3}});
+        gMap.addLayer(gImageLayer);
+
+        // 矢量层实例\添加
+        let gFeatureLayer = new AILabel.Layer.Feature('featureLayer', {zIndex: 3, transparent: false});
+        gMap.addLayer(gFeatureLayer);
+
+        let fea = new AILabel.Feature.Rect(`feature-111`, [{x: -183, y: 122}, {x: -161, y: 122}, {x: -161, y: 94}, {x: -183, y: 94}], {
+            name: '中国'
+        });
+        gFeatureLayer.addFeature(fea);
+
+        // 掩膜层实例\添加
+        let gMaskLayer = new AILabel.Layer.Mask('maskLayer', {zIndex: 2, opacity: .8});
+        gMap.addLayer(gMaskLayer);
+        gMaskLayer.setRoi([
+            {
+                x: - imgWidth / 2,
+                y: imgHeight / 2
+            }, {
+                x:  imgWidth / 2,
+                y: imgHeight / 2
+            }, {
+                x:  imgWidth / 2,
+                y: -imgHeight / 2
+            }, {
+                x: - imgWidth / 2,
+                y: -imgHeight / 2
+            }
+        ]);
+        // 获取涂抹像素数据
+        function getMaskPixels() {
+            console.log('获取涂抹像素数据');
+            gMaskLayer.getMaskActionsWithPixels(imgWidth, imgHeight);
+            // console.log('result', result);
+        }
+        function getDefaultMaskPixels() {
+            const imgUrl1 = '../../imgs/timg_mask_min.png';
+            const urlList = [imgUrl1];
+            urlList.forEach(url => {
+                const image = new Image();
+                image.onload = () => {
+                    // // 测试本地换转颜色值
+                    // const canvas = document.createElement('canvas');
+                    // canvas.width = image.width;
+                    // canvas.height = image.height;
+                    // const ctx = canvas.getContext("2d");
+                    // ctx.drawImage(image, 0, 0);
+                    // const imagePixels = ctx.getImageData(0, 0, image.width, image.height);
+                    // const data = imagePixels.data;
+                    // // 对像素集合中的单个像素进行循环，每个像素是由4个通道组成，所以 i=i+4
+                    // for(let i = 0; i < data.length; i+=4) {
+                    //     // 得到 RGBA 通道的值
+                    //     let r = data[i]
+                    //     , g = data[i+1]
+                    //     , b = data[i+2]
+                    //     , a = data[i+3];
+
+                    //     // 我们从最下面那张颜色生成器中可以看到在图片的右上角区域，有一小块在
+                    //     // 肉眼的观察下基本都是白色的，所以我在这里把 RGB 值都在 245 以上的
+                    //     // 的定义为白色
+                    //     // 大家也可以自己定义的更精确，或者更宽泛一些
+                    //     if([r,g,b,a].every(v => v === 255)) data[i+3] = 0;
+                    // }
+                    // ctx.putImageData(imagePixels, 0, 0);
+                    // document.body.appendChild(canvas);
+                    // const data2 = canvas.toDataURL( 'image/png', 1 );  //1表示质量(无损压缩)
+
+                    gMaskLayer.addMaskAction({
+                        key: `${(new Date()).getTime()}`,
+                        name: '标签B',
+                        type: 'imgMask',
+                        image
+                    });
+                };
+                image.src = url;
+            });
+            // console.log('1', new Date());
+            // // 图片对应的rle数据
+            // const rle = [0, 12052992];
+            // const color = '#EA2E2E';
+            // const imgSize = {w: imgWidth, h: imgHeight};
+            // const singlePixelList = new Array(imgSize.w * imgSize.h);
+            // let sum = 0;
+            // rle.forEach((value, index) => {
+            //     if (index % 2 === 1) {
+            //         let startPixelY = parseInt(sum / imgSize.w, 10);
+            //         let startPixelX = sum % imgSize.w - 1;
+            //         for (let i = 0; i < value; i++) {
+            //             if ((startPixelX + 1) >= imgSize.w) {
+            //                 startPixelY++;
+            //                 startPixelX = 0;
+            //             }
+            //             else {
+            //                 startPixelX++;
+            //             }
+            //             const pixelPoint = [[startPixelX, startPixelY], color];
+            //             singlePixelList[sum + i] = pixelPoint;
+            //         }
+            //     }
+            //     sum += value;
+            // });
+            // console.log('2', new Date());
+            // return singlePixelList;
+        }
+
+        // roi层实例\添加
+        let roiLayer = new AILabel.Layer.Roi('roiLayer', {zIndex: 2});
+        gMap.addLayer(roiLayer);
+
+        // 针对绘制完成之后的坐标转换公式【目前只针对mask场景有效】
+        gMap.slots.on('coordsTransformBeforeGeometryDrawDone', function (point, scene) {
+            return {x: point.x - 100, y: point.y - 100};
+        });
+        // 绘制之前的坐标格式转换公式【目前只针对mask场景有效】
+        gMap.slots.on('coordsTransformBeforeRender', function (point, scene) {
+            return {x: point.x + 100, y: point.y + 100};
+        });
+        // mouseDown 的时候绘制的roi点是否有效
+        gMap.slots.on('filterRoiArea', function (point) {
+            let validated = true;
+            const geometryPoints = gMap.drawGeometryPoints;
+            const prevPoint =geometryPoints[geometryPoints.length - 1];
+            const roiLayerRoiAreas = roiLayer.getAllRoiAreas();
+            const levelOrderBottomArr = getLevelOrderBottom(roiLayerRoiAreas);
+            if (levelOrderBottomArr.length) {
+                validated = false;
+                for (let i = 0; i < levelOrderBottomArr.length; i++) {
+                    if ((globalRoiType === levelOrderBottomArr[i].roiType) && AILabel.Util.pointInPoly(point, levelOrderBottomArr[i].points)) {
+                        break;
+                    }
+                    if ((globalRoiType !== levelOrderBottomArr[i].roiType) && AILabel.Util.pointInPoly(point, levelOrderBottomArr[i].points)) {
+                        if (!prevPoint || AILabel.Util.pointInPoly(prevPoint, levelOrderBottomArr[i].points)) {
+                            validated = true;
+                        }
+                        break;
+                    }
+                }
+            }
+            !validated && console.log('此点无效');
+            return validated;
+        });
+
+        gMap.events.on('geometryDrawDone', function (type, points, options) {
+            // 生成元素唯一标志（时间戳）
+            const timestamp = new Date().getTime();
+            const cMode = gMap.getMode();
+            const featureStyle = mappingStyles[cMode].featureStyle;
+            // 元素添加展示
+            if (type === 'point') {
+                console.log('--points--', points);
+                const {radius = 5} = options || {};
+                let fea = new AILabel.Feature.Point(`feature-${timestamp}`, points, {
+                    name: '中国'
+                }, featureStyle);
+                gFeatureLayer.addFeature(fea);
+            }
+            if (type === 'rect') {
+                let fea = new AILabel.Feature.Rect(
+                    `feature-${timestamp}`, points,
+                    {name: '中国'},
+                    featureStyle,
+                    {activeColor: '#000', cross: true}
+                );
+                gFeatureLayer.addFeature(fea);
+            }
+            else if (type === 'polygon') {
+                let fea = new AILabel.Feature.Polygon(
+                    `feature-${timestamp}`,
+                    points,
+                    {name: '中国'},
+                    featureStyle,
+                    {edgeFixed: true}  // edgeFixed标识是否固定边
+                );
+                gFeatureLayer.addFeature(fea);
+            }
+            else if (type === 'polyline') {
+                const {width = 5} = options || {};
+                let fea = new AILabel.Feature.Polyline(`feature-${timestamp}`, points, {
+                    name: '中国'
+                }, featureStyle, {width, activeColor: '#000'});
+                gFeatureLayer.addFeature(fea);
+            }
+            else if (type === 'mask') {
+                // 包含绘制&涂抹事件
+                const maskAction = points;
+                console.log('--maskAction--', maskAction);
+                maskAction.name = '标签A';
+                gMaskLayer.addMaskAction(maskAction);
+            }
+            else if (type === 'roi') {
+                let fea = new AILabel.Feature.Roi(`roi-${timestamp}`, globalRoiType, points, {
+                }, featureStyle);
+                const roiLayerRoiAreas = roiLayer.getAllRoiAreas();
+                if (!roiLayerRoiAreas.length && fea.roiType === 'roi') {
+                    // 此时需要添加非roi
+                    let containerNotRoi = new AILabel.Feature.Roi(`roi-${timestamp}-'root'`, 'notRoi', [{
+                            x: - imgWidth / 2,
+                            y: imgHeight / 2
+                        }, {
+                            x:  imgWidth / 2,
+                            y: imgHeight / 2
+                        }, {
+                            x:  imgWidth / 2,
+                            y: -imgHeight / 2
+                        }, {
+                            x: - imgWidth / 2,
+                            y: -imgHeight / 2
+                        }], {
+                    }, {}, featureStyle);
+                    roiLayer.addFeature(containerNotRoi);
+                }
+                else if (!roiLayerRoiAreas.length && fea.roiType === 'notRoi') {
+                    // 此时需要添加非roi
+                    let containerNotRoi = new AILabel.Feature.Roi(`roi-${timestamp}-root`, 'roi', [{
+                            x: - imgWidth / 2,
+                            y: imgHeight / 2
+                        }, {
+                            x:  imgWidth / 2,
+                            y: imgHeight / 2
+                        }, {
+                            x:  imgWidth / 2,
+                            y: -imgHeight / 2
+                        }, {
+                            x: - imgWidth / 2,
+                            y: -imgHeight / 2
+                        }], {
+                    }, {}, featureStyle);
+                    roiLayer.addFeature(containerNotRoi);
+                }
+                roiLayer.addFeature(fea);
+            }
+        });
+        gMap.events.on('featureHover', function (feature, evt, wxy) {
+            // console.log('feature, evt, wxy', feature, evt, wxy);
+        });
+
+
+        const gTextStyle = new AILabel.Style({fontColor: '#FF0000', fontSize: 14, strokeColor: '#0000FF', opacity: 0});
+
+        // // 文本层实例\添加
+        // let gTextLayer = new AILabel.Layer.Text('textLayer', {zIndex: 2});
+        // gMap.addLayer(gTextLayer);
+
+        // // 文本实例\添加
+        // const text = new AILabel.Text('id', {
+        //     pos: {x: 0, y: 0},
+        //     offset: {x: 0, y: 0},
+        //     width: 130,
+        //     maxWidth: 300,
+        //     text: '我和我的祖国'
+        // }, gTextStyle);
+        // gTextLayer.addText(text);
+
+        // 文本层实例\添加
+        let gTextLayer2 = new AILabel.Layer.Text('textLayer2', {zIndex: 2});
+        gMap.addLayer(gTextLayer2);
+
+        // 文本实例\添加
+        const text2 = new AILabel.Text('id', {
+            pos: {x: 0, y: 0},
+            offset: {x: 0, y: 0},
+            maxWidth: 100,
+            text: '我和我的祖国'
+        }, gTextStyle);
+        gTextLayer2.addText(text2);
+
+        // marker对象实例\添加
+        const marker = new AILabel.Marker('name-中国', {
+            src: '../../imgs/marker.png',
+            x: 0,
+            y: 0,
+            offset: {x: -32, y: -32},
+        });
+        // 注册监听事件删除标注
+        marker.regEvent('click', function () {
+            gMap.mLayer.removeMarker(this);
+        });
+        gMap.mLayer.addMarker(marker);
+
+        gMap.events.on('geometryEditDone', (type, activeFeature, points) => {
+            if (type === 'rect' || type === 'polygon' || type === 'polyline') {
+                activeFeature.update({points});
+            }
+            else if (type === 'roi') {
+                // 判断编辑后的多边形是否有效
+                const activeFeatureValidate = roiLayer.validateFeatureWithNewPoints(activeFeature, points);
+                activeFeatureValidate && activeFeature.update({points});
+            }
+            else if (type === 'mask') {
+                for (let i = 0, len = activeFeature.length; i < len; i++) {
+                    const {layerId, masks} = activeFeature[i];
+                    const maskLayer = gMap.getLayerById(layerId);
+                    maskLayer && maskLayer.addMasks(masks, true);
+                }
+            }
+        });
+        // 目前此事件钩子只针对point类型数据
+        gMap.events.on('geometryRemove', (type, removeFeature) => {
+            if (type === 'point') {
+                gFeatureLayer.removeFeatureById(removeFeature.id);
+            }
+        });
+    </script>
+</body>
+</html>

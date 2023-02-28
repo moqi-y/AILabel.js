@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+
+	<!-- <script src='../../../jslib/gClass.js'></script>
+	<script src='../../../jslib/gConfig.js'></script>
+	<script src='../../../jslib/gUtil.js'></script>
+	<script src='../../../jslib/gGraph.js'></script>
+	<script src='../../../jslib/gGeometry.js'></script>
+	<script src='../../../jslib/gFeature.js'></script>
+    <script src='../../../jslib/gStyle.js'></script>
+    <script src="../../../jslib/gEdit.js"></script>
+	<script src='../../../jslib/gMap.js'></script>
+	<script src='../../../jslib/gLayer.js'></script>
+	<script src='../../../jslib/gControl.js'></script> -->
+
+	<script src='../../AILabel.pkg.min.js'></script>
+	<style>
+        body {
+
+        }
+        #map {
+        	width: 500px;
+        	height: 400px;
+        	border: 1px solid red;
+        	position: relative;
+        	cursor: pointer;
+        }
+        #eagle-map,
+        #eagle-map2 {
+        	position: relative;
+            float: left;
+
+        }
+        #eagle-control-id-grid {
+            border-width: 0 !important;
+        }
+	</style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="eagle-map"></div>
+    <div id="eagle-map2"></div>
+	<span>说明：可进行图片平移，滑轮缩放</span>
+    <script>
+        // 容器对象声明
+        let gMap = new AILabel.Map('map', {zoom: 1080, cx: 0, cy: 0, zoomMax: 650 * 10, zoomMin: 650 / 10});
+
+        // 图片层实例\添加
+        let gImageLayer = new AILabel.Layer.Image('img', '../../imgs/demo.jpeg', {w: 1080, h: 720}, {
+            zIndex: 1,
+            grid: {
+                rowCount: 4, // 行数
+                columnCount: 4, // 列数
+                color: '#000' // 边框颜色
+            }
+        });
+        gMap.addLayer(gImageLayer);
+
+        // setTimeout(function () {
+        //     gImageLayer.update({grid: {
+        //         rowCount: 5, // 行数
+        //         columnCount: 5, // 列数
+        //         color: 'red'
+        //     }});
+        // }, 2000);
+
+        // setTimeout(function () {
+        //     gImageLayer.removeGrid();
+        // }, 4000);
+
+
+		const scaleControl = new AILabel.Control.Scale(
+			'scale-control-id',
+			{postion: {left: 10, top: 10}}
+		);
+		gMap.addControl(scaleControl);
+
+		const eagleControl = new AILabel.Control.EagleMap(
+			'eagle-control-id',
+			{
+                container: 'eagle-map', // 自定义缩略图控件展示位置
+                // postion: {right: 10, bottom: 10}, // 当存在container时，此参数不需要传
+                image: {src: '../../imgs/demo.jpeg', width: 1080, height: 720},
+                grid: {
+                    rowCount: 3,
+                    columnCount: 3,
+                    color: 'blue'
+                },
+                size: {
+                    width: 200,
+                    height: 150
+                }
+			}
+		);
+        gMap.addControl(eagleControl);
+
+        const eagleControl2 = new AILabel.Control.EagleMap(
+			'eagle-control-id-grid',
+			{
+                container: 'eagle-map2', // 自定义缩略图控件展示位置
+                image: {src: '../../imgs/demo.jpeg', width: 1080, height: 720},
+                type: 'grid',
+                grid: {
+                    rowCount: 4,
+                    columnCount: 4,
+                    color: 'black'
+                },
+                size: {
+                    width: 150,
+                    height: 150
+                }
+			}
+		);
+		gMap.addControl(eagleControl2);
+
+    </script>
+</body>
+</html>

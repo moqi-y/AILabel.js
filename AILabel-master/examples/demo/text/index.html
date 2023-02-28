@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+
+	<!--<script src='../../../jslib/gClass.js'></script>
+	<script src='../../../jslib/gConfig.js'></script>
+	<script src='../../../jslib/gUtil.js'></script>
+	<script src='../../../jslib/gGraph.js'></script>
+	<script src='../../../jslib/gGeometry.js'></script>
+	<script src='../../../jslib/gFeature.js'></script>
+    <script src='../../../jslib/gStyle.js'></script>
+    <script src="../../../jslib/gEdit.js"></script>
+	<script src='../../../jslib/gMap.js'></script>
+	<script src='../../../jslib/gLayer.js'></script>-->
+
+	<script src='../../AILabel.pkg.min.js'></script>
+	<style>
+        #map {
+        	width: 500px;
+        	height: 400px;
+        	border: 1px solid red;
+        	position: relative;
+        	cursor: pointer;
+        }
+	</style>
+</head>
+<body>
+	<div id="map"></div>
+    <script>
+        // 常用样式声明
+        const gTextStyle = new AILabel.Style({fontColor: '#0000FF', strokeColor: '#0000FF', opacity: 0});
+
+        // 容器对象声明
+        let gMap = new AILabel.Map('map', {zoom: 1080, cx: 0, cy: 0, zoomMax: 650 * 10, zoomMin: 650 / 10});
+
+        // 图片层实例\添加
+        let gImageLayer = new AILabel.Layer.Image('img', '../../imgs/demo.jpeg', {w: 1080, h: 720}, {zIndex: 1});
+        gMap.addLayer(gImageLayer);
+
+        // 文本层实例\添加
+        let gTextLayer = new AILabel.Layer.Text('textLayer', {zIndex: 2});
+        gMap.addLayer(gTextLayer);
+
+        // 文本实例\添加
+        const text = new AILabel.Text('id', {
+            pos: {x: 100, y: 100},
+            offset: {x: 0, y: 0},
+            width: 100, // maxwidth
+            text: '中国'
+        }, gTextStyle);
+        gTextLayer.addText(text);
+    </script>
+</body>
+</html>

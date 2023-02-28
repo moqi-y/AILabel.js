@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+
+	<!--<script src='../../jslib/gClass.js'></script>
+	<script src='../../jslib/gConfig.js'></script>
+	<script src='../../jslib/gUtil.js'></script>
+	<script src='../../jslib/gGraph.js'></script>
+	<script src='../../jslib/gGeometry.js'></script>
+	<script src='../../jslib/gFeature.js'></script>
+    <script src='../../jslib/gStyle.js'></script>
+    <script src="../../../jslib/gEdit.js"></script>
+	<script src='../../jslib/gMap.js'></script>
+	<script src='../../jslib/gLayer.js'></script>-->
+
+	<script src='../../AILabel.pkg.min.js'></script>
+	<style>
+        #map {
+        	width: 500px;
+        	height: 400px;
+        	border: 1px solid red;
+        	position: relative;
+        	cursor: pointer;
+        }
+	</style>
+</head>
+<body>
+	<div id="map"></div>
+	<span>说明：点击marker执行删除</span>
+    <script>
+        // 容器对象声明
+        let gMap = new AILabel.Map('map', {zoom: 1080, cx: 0, cy: 0, zoomMax: 650 * 10, zoomMin: 650 / 10});
+
+        // 图片层实例\添加
+        let gImageLayer = new AILabel.Layer.Image('img', '../../imgs/demo.jpeg', {w: 1080, h: 720}, {zIndex: 1});
+        gMap.addLayer(gImageLayer);
+
+        // 不需要声明markerLayer标注图层，有且只有一个markerLayer，可通过gMap.mLayer来获取
+
+        // marker对象实例\添加
+        const marker = new AILabel.Marker('name-中国', {
+            src: '../../imgs/marker.png',
+            x: 0,
+            y: 0,
+            offset: {x: -32, y: -32},
+        });
+        // 注册监听事件删除标注
+        marker.regEvent('click', function () {
+            gMap.mLayer.removeMarker(this);
+        });
+        gMap.mLayer.addMarker(marker);
+    </script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+
+    <!-- <script src="../../../jslib/gClass.js"></script>
+    <script src="../../../jslib/gConfig.js"></script>
+    <script src="../../../jslib/gUtil.js"></script>
+    <script src="../../../jslib/gGraph.js"></script>
+    <script src="../../../jslib/gGeometry.js"></script>
+    <script src="../../../jslib/gFeature.js"></script>
+    <script src="../../../jslib/gStyle.js"></script>
+    <script src="../../../jslib/gEdit.js"></script>
+    <script src="../../../jslib/gMap.js"></script>
+    <script src="../../../jslib/gLayer.js"></script> -->
+
+    <script src="../../AILabel.pkg.min.js"></script>
+    <style>
+        #map {
+            height: 400px;
+            border: 1px solid #f00;
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div>鼠标按下开始绘制，弹起绘制完成</div>
+    <script>
+        // 常用样式声明
+        const gFetureStyle = new AILabel.Style({strokeColor: '#0000FF', lineWeight: 2});
+
+        // 容器对象声明
+        let gMap = new AILabel.Map('map', {zoom: 1080, cx: 0, cy: 0, zoomMax: 650 * 10, zoomMin: 650 / 10, autoFeatureSelect: true});
+
+        // 设置当前操作模式为‘drawRect’
+        gMap.setMode('drawRect', gFetureStyle);
+
+        // 图片层实例\添加
+        let gImageLayer = new AILabel.Layer.Image('img', '../../imgs/demo.jpeg', {w: 1080, h: 720}, {zIndex: 1});
+        gMap.addLayer(gImageLayer);
+
+        // 矢量层实例\添加
+        let gFeatureLayer = new AILabel.Layer.Feature('featureLayer', {zIndex: 2, transparent: true});
+        gMap.addLayer(gFeatureLayer);
+
+        gMap.events.on('geometryDrawDone', function (type, points) {
+            // 生成元素唯一标志（时间戳）
+            const timestamp = new Date().getTime();
+            // 元素添加展示
+            let fea = new AILabel.Feature.Rect(`feature-${timestamp}`, points, {
+                name: '中国'
+            }, gFetureStyle);
+            gFeatureLayer.addFeature(fea);
+        });
+        gMap.events.on('geometryEditDone', function (type, activeFeature, points) {
+            activeFeature.update({points});
+            activeFeature.show();
+        });
+        // feature-reset监听
+        gMap.events.on('featureStatusReset', function () {
+            gMap.mLayer.removeAllMarkers();
+        });
+
+        gMap.events.on('geometryEditing', function (type, feature, points) {
+            if (!gMap.mLayer) return;
+            const marker = gMap.mLayer.getMarkerById(`marker-${feature.id}`);
+            if (!marker) return;
+            const bounds = AILabel.Util.getBounds(points);
+            const leftTopPoint = bounds[0]; // 边界坐上角坐标
+            marker.update({x: leftTopPoint.x, y: leftTopPoint.y});
+        });
+
+        gMap.events.on('featureSelected', function (feature) {
+            let cFeature = feature;
+            // 删除按钮添加
+            const featureBounds = cFeature.getBounds();
+            const leftTopPoint = featureBounds[0]; // 边界坐上角坐标
+            let deleteMarker = new AILabel.Marker(`marker-${cFeature.id}`,
+                {
+                    src: '../../imgs/delete.png',
+                    x: leftTopPoint.x,
+                    y: leftTopPoint.y,
+                    offset: {
+                        x: 0,
+                        y: 0
+                    },
+                    featureId: cFeature.id
+                });
+            gMap.mLayer.addMarker(deleteMarker);
+
+            deleteMarker.regEvent('click', function () {
+                // 执行选中元素删除
+                gFeatureLayer.removeFeatureById(this.info.featureId);
+                // 对应删除标注层中删除（x）icon
+                gMap.mLayer.removeAllMarkers();
+            });
+        });
+
+        // const timestamp = new Date(); // 关联标志
+        // const feature = new AILabel.Feature.Polygon(`feature-${timestamp}`, .....);
+
+        // // positon可通过feature.points空间数据关联
+        // const text = new AILabel.Text(`text-${timestamp}`, .....);
+
+        // // positon可通过feature.points空间数据关联
+        // const marker = new AILabel.Marker(`marker-${timestamp}`, .....);
+
+        // featureLayer.addFeature(feature);
+        // textLayer.addText(text);
+        // gMap.mLayer.addMarker(marker);
+
+        // // 删除
+        // marker.regEvent('click', function () {
+        //     // this指当前对象marker
+        //     const releateKey = this.id.split('-')[1];
+        //     featureLayer.removeFeatureById(`feature-${releateKey}`);
+        //     textLayer.removeTextById(`text-${releateKey}`);
+        //     gMap.mLayer.removeMarkerById(`marker-${releateKey}`);
+        // };
+
+        window.onresize = function () {
+            gMap && gMap.resize();
+        };
+    </script>
+</body>
+</html>
