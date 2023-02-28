@@ -1,0 +1,64 @@
+<!--
+ * @Author: yuanzhen
+ * @Date: 2022-08-11 15:03:41
+ * @LastEditors: yuanzhen 2504621340@qq.com
+ * @LastEditTime: 2022-08-11 15:15:15
+ * @FilePath: \h5\text.html
+ * @Description: 
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <script src='./dist/AILabel.pkg.min.js'></script>
+    <style>
+        #map {
+            width: 1200px;
+            height: 800px;
+            border: 1px solid red;
+            position: relative;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+        // 常用样式声明
+        const gTextStyle = new AILabel.Style({ fontColor: '#00ff15', strokeColor: '#00ff15', opacity: 0 });
+
+        // 容器对象声明
+        let gMap = new AILabel.Map('map', { zoom: 1080, cx: 0, cy: 0, zoomMax: 650 * 10, zoomMin: 650 / 10 });
+
+        // 图片层实例\添加
+        let gImageLayer = new AILabel.Layer.Image('img', './img/demo.jpeg', { w: 1080, h: 720 }, { zIndex: 1 });
+        gMap.addLayer(gImageLayer);
+
+        // 文本层实例\添加
+        let gTextLayer = new AILabel.Layer.Text('textLayer', { zIndex: 2 });
+        gMap.addLayer(gTextLayer);
+
+        // 文本实例\添加
+        const text1 = new AILabel.Text('id', {
+            pos: { x: 100, y: 100 },
+            offset: { x: 0, y: 0 },
+            width: 100, // maxwidth
+            text: '天空'
+        }, gTextStyle);
+        gTextLayer.addText(text1);
+
+        const text2 = new AILabel.Text('id', {
+            pos: { x: -10, y: 10 },
+            offset: { x: 0, y: 0 },
+            width: 100, // maxwidth
+            text: '建筑'
+        }, gTextStyle);
+        gTextLayer.addText(text2);
+
+    </script>
+</body>
+
+</html>

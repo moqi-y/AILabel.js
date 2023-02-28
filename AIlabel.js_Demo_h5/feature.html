@@ -1,0 +1,129 @@
+<!--
+ * @Author: yuanzhen
+ * @Date: 2022-08-11 15:18:26
+ * @LastEditors: yuanzhen 2504621340@qq.com
+ * @LastEditTime: 2022-08-11 19:34:05
+ * @FilePath: \h5\feature.html
+ * @Description: 
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <script src='./dist/AILabel.pkg.min.js'></script>
+    <style>
+        #map {
+            width: 1200px;
+            height: 800px;
+            border: 1px solid red;
+            position: relative;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <button onclick=" mouseOver()">mouseOver()</button>
+    <button onclick="clearText() ">清除文字</button>
+    <script>
+        /*    因为该库坐标原点为图片的中心点，而项目中的坐标原点一般为图片左上角。所以项目中常需要坐标偏移。
+        坐标偏移方法：设后端传值为[x,y],则用该库渲染时的坐标应处理为：{ x -W/2,y+H/2}，其中W，H分别为渲染的底图宽度和高度 */
+
+        // 常用样式声明
+        const gFetureStyle = new AILabel.Style({ strokeColor: 'red' });
+        const gTextStyle = new AILabel.Style({ fontColor: 'black', strokeColor: '#00ff15', opacity: 0 });
+
+        // 容器对象声明
+        let gMap = new AILabel.Map('map', { zoom: 1080, cx: 0, cy: 0, zoomMax: 650 * 10, zoomMin: 650 / 10 });
+
+
+        // 图片层实例\添加
+        let gImageLayer = new AILabel.Layer.Image('img', './img/demo.jpeg', { w: 1080, h: 720 }, { zIndex: 1 }, {
+            // 左上角相对中心点偏移量
+            x: -100,
+            y: -400,
+        });
+        gMap.addLayer(gImageLayer);
+
+        // 矢量层实例\添加图形绘制
+        let gFeatureLayer = new AILabel.Layer.Feature('featureLayer', { zIndex: 2, transparent: true });
+        gMap.addLayer(gFeatureLayer);
+        console.log("gFeatureLayer:", gFeatureLayer);
+        // 矢量层实例\添加文字标注
+        let gTextLayer = new AILabel.Layer.Text('textLayer', { zIndex: 2 });
+        gMap.addLayer(gTextLayer);
+
+        // 矢量要素实例\添加  图形标注框1
+        const fea1 = new AILabel.Feature.Polygon('id23', [
+            { x: 20 - 540, y: 20 - 100 },
+            { x: 30 - 540, y: 30 - 100 },
+            { x: 35 - 540, y: 24 - 100 },
+            { x: 38 - 540, y: 10 - 100 },
+            { x: 28 - 540, y: 13 - 100 },
+            { x: 5 - 540, y: 15 - 100 },
+        ], { name: '标注点' }, gFetureStyle);
+        gFeatureLayer.addFeature(fea1);
+
+        // 图形标注框2
+        const fea2 = new AILabel.Feature.Polygon('id23', [
+            { x: 10, y: 10 },
+            { x: 10, y: 50 },
+            { x: 40, y: 50 },
+            { x: 40, y: 10 },
+            // { x: 100, y: 160 },
+            // { x: 190, y: 110 },
+            // { x: 116, y: 120 },
+            // { x: 115, y: 129 },
+            // { x: 110, y: 36 },
+            // { x: 110, y: 120 },
+            // { x: 116, y: 110 },
+            // { x: 110, y: 118 },
+            // { x: 124, y: 126 },
+        ], { name: '标注点' }, gFetureStyle);
+        gFeatureLayer.addFeature(fea2);
+
+
+
+        function mouseOver() {
+            let cfeature = gFeatureLayer.getFeatureById('id23');
+            if (!cfeature) {
+                return;
+            }
+            cfeature.hover(
+                text()
+            )
+        }
+
+        function text() {
+            const text1 = new AILabel.Text('123', {
+                // 假设后端传值[0,0],则渲染时为：{x: 0-W/2,y: -0+H/2},其中W，H分别为渲染的底图宽度和高度。
+                pos: { x: -540, y: 360 },
+                offset: { x: 0, y: 0 },
+                width: 100, // maxwidth
+                text: 'O点'
+            }, gTextStyle);
+            gTextLayer.addText(text1);
+
+            // setTimeout(() => {
+            //     gTextLayer.removeTextById('123');  //移除对应id的文字内容
+            // }, 3000)
+            // console.log(text1.id);
+            return text1.id
+        }
+
+        function clearText() {
+            let id = text()  //接收函数返回值
+            console.log("id", id);
+            gTextLayer.removeTextById(id);  //移除对应id的文字内容
+        }
+        // gMap.setCenter(540, -360);
+        const center = gMap.getCenter();
+        console.log("获取中心点：", center);
+        gMap.events.on('featureDeleted', () => { console.log('bounds has changed') });
+    </script>
+</body>
+
+</html>
